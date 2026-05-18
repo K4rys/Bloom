@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloom </title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --grad-a:#fde8f0;--grad-b:#e8e0ff;--grad-c:#d4f5eb;--grad-d:#fde8dc;
+      --pink-d:#e891aa;--lavender:#c9b8f9;
+      --text:#5a3d52;--text-lt:#9b7a8e;
+      --ring1:#e891aa;--ring2:#c9b8f9;
+      --btn-grad:linear-gradient(135deg,#e891aa,#c9b8f9);
+      --shadow:0 8px 40px rgba(180,120,160,0.18);
+      --card-bg:rgba(255,255,255,0.52);
+      --panel-bg:rgba(255,255,255,0.45);
+      --border:rgba(255,255,255,0.7);
+      --input-bg:rgba(255,255,255,0.6);
+    }
+    [data-theme="ocean"] {
+      --grad-a:#dff0ff;--grad-b:#d0e8f5;--grad-c:#c8f0f0;--grad-d:#d8e8ff;
+      --pink-d:#5baad4;--lavender:#7ec8e3;--text:#1e3a52;--text-lt:#4a7a9b;
+      --btn-grad:linear-gradient(135deg,#5baad4,#7ec8e3);
+      --shadow:0 8px 40px rgba(60,130,180,0.18);
+    }
+    [data-theme="forest"] {
+      --grad-a:#d8f0e0;--grad-b:#e0f0d0;--grad-c:#c8e8c0;--grad-d:#f0ead8;
+      --pink-d:#5aaa6a;--lavender:#8acc88;--text:#1e3a28;--text-lt:#4a7a5a;
+      --btn-grad:linear-gradient(135deg,#5aaa6a,#8acc88);
+      --shadow:0 8px 40px rgba(60,140,80,0.18);
+    }
+    [data-theme="sunset"] {
+      --grad-a:#ffe0c8;--grad-b:#ffc8b0;--grad-c:#ffd8b0;--grad-d:#ffeac8;
+      --pink-d:#e8784a;--lavender:#f0a86a;--text:#52280a;--text-lt:#9b6040;
+      --btn-grad:linear-gradient(135deg,#e8784a,#f0a86a);
+      --shadow:0 8px 40px rgba(200,100,60,0.18);
+    }
+    [data-dark="1"] {
+      --grad-a:#1a1025;--grad-b:#1a1530;--grad-c:#0f1a20;--grad-d:#201015;
+      --card-bg:rgba(40,28,50,0.78);--panel-bg:rgba(40,28,50,0.65);
+      --border:rgba(255,255,255,0.1);--input-bg:rgba(255,255,255,0.09);
+      --text:#f0dff0;--text-lt:#b09ab8;--shadow:0 8px 40px rgba(0,0,0,0.45);
+    }
+
+    html,body{height:100%;font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden;}
+    body{
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b),var(--grad-c),var(--grad-d));
+      background-size:400% 400%;
+      animation:gradShift 14s ease infinite;
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:1.5rem;transition:color 0.5s;
+    }
+    @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    /* Zen */
+    body.zen .card>*:not(.timer-ring-wrap):not(#motivation){ display:none!important; }
+    body.zen .motivation{ margin-bottom:0; }
+    body.zen .card{background:transparent;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}
+    .zen-hint{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);font-size:0.72rem;color:var(--text-lt);opacity:0;transition:opacity 0.4s;pointer-events:none;z-index:100;white-space:nowrap;}
+    body.zen .zen-hint{opacity:1;}
+
+    /* Particles */
+    .particles-layer{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .particle{position:absolute;opacity:0;animation:fall linear infinite;}
+    .particle.petal{border-radius:80% 20% 80% 20% / 80% 20% 80% 20%;}
+    .particle.bubble{border-radius:50%;border:2px solid currentColor;background:transparent!important;animation-name:rise!important;}
+    @keyframes fall{0%{transform:translateY(-60px) rotate(0deg) scale(0.8);opacity:0}10%{opacity:.65}90%{opacity:.45}100%{transform:translateY(110vh) rotate(360deg) scale(1.1);opacity:0}}
+    @keyframes rise{0%{transform:translateY(110vh) scale(0.6);opacity:0}10%{opacity:.5}90%{opacity:.3}100%{transform:translateY(-60px) scale(1.2);opacity:0}}
+
+    /* Card */
+    .card{
+      position:relative;z-index:1;
+      background:var(--card-bg);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      border:1.5px solid var(--border);border-radius:32px;
+      box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,0.45);
+      padding:2rem 2rem 1.8rem;max-width:440px;width:100%;text-align:center;
+      animation:cardIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+      transition:background 0.4s,border 0.4s,box-shadow 0.4s;
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(0.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+    /* Top bar */
+    .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+    .app-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;}
+    .top-actions{display:flex;gap:0.4rem;}
+    .icon-btn{
+      background:var(--input-bg);border:none;cursor:pointer;width:34px;height:34px;
+      border-radius:50%;font-size:0.9rem;display:flex;align-items:center;justify-content:center;
+      transition:transform 0.15s,background 0.2s;color:var(--text);
+    }
+    .icon-btn:hover{transform:scale(1.1);background:rgba(255,255,255,0.82);}
+    [data-dark="1"] .icon-btn:hover{background:rgba(255,255,255,0.15);}
+
+    /* Tabs */
+    .tabs{display:flex;gap:0.35rem;background:rgba(255,255,255,0.32);border-radius:50px;padding:5px;margin-bottom:1.4rem;}
+    .tab{flex:1;border:none;background:transparent;border-radius:50px;padding:.4rem .1rem;font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:500;color:var(--text-lt);cursor:pointer;transition:all 0.3s;}
+    .tab.active{background:white;color:var(--text);box-shadow:0 2px 10px rgba(180,120,160,.2);}
+    [data-dark="1"] .tab.active{background:rgba(255,255,255,.14);color:var(--text);}
+
+    /* Ring */
+    .timer-ring-wrap{position:relative;width:200px;height:200px;margin:0 auto 1.2rem;}
+    .timer-ring-wrap svg{transform:rotate(-90deg);width:100%;height:100%;}
+    .ring-bg{fill:none;stroke:rgba(200,200,220,0.32);stroke-width:10;}
+    .ring-progress{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear;filter:drop-shadow(0 0 6px rgba(233,145,170,0.5));}
+    .timer-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;}
+    .timer-display{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;letter-spacing:-.03em;line-height:1;}
+    .timer-lbl{font-size:.7rem;color:var(--text-lt);letter-spacing:.1em;text-transform:uppercase;}
+
+    /* Motivation */
+    .motivation{font-family:'Playfair Display',serif;font-style:italic;font-size:.95rem;color:var(--text-lt);min-height:1.4em;margin-bottom:1.2rem;transition:opacity 0.4s;}
+
+    /* Controls */
+    .controls{display:flex;align-items:center;justify-content:center;gap:.8rem;margin-bottom:1.4rem;}
+    .btn{border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:50px;transition:transform 0.15s,box-shadow 0.15s;}
+    .btn:active{transform:scale(0.95)!important;}
+    .btn-main{background:var(--btn-grad);color:white;font-size:.95rem;padding:.8rem 2.2rem;box-shadow:0 4px 20px rgba(232,145,170,.38);letter-spacing:.03em;transition:transform 0.15s,box-shadow 0.15s,background 0.5s;}
+    .btn-main:hover{box-shadow:0 6px 26px rgba(232,145,170,.58);transform:translateY(-1px);}
+    .btn-icon{background:var(--input-bg);color:var(--text);width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;box-shadow:0 2px 8px rgba(180,120,160,.12);}
+    .btn-icon:hover{background:rgba(255,255,255,.82);transform:translateY(-1px);}
+    [data-dark="1"] .btn-icon:hover{background:rgba(255,255,255,.15);}
+
+    /* Sessions */
+    .session-counter{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:var(--text-lt);margin-bottom:1.4rem;}
+    .tomatoes{display:flex;gap:4px;}
+    .tomato-dot{width:11px;height:11px;border-radius:50%;background:rgba(200,160,180,.25);border:1.5px solid rgba(200,160,180,.35);transition:background 0.4s,transform 0.3s;}
+    .tomato-dot.done{background:var(--pink-d);border-color:var(--pink-d);transform:scale(1.18);}
+
+    /* Settings drawer (fixed side panel) */
+    .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.22);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+    .settings-overlay.open{opacity:1;pointer-events:auto;}
+    .settings-panel{
+      position:fixed;top:0;right:0;height:100%;width:320px;max-width:92vw;
+      background:var(--card-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+      border-left:1.5px solid var(--border);
+      box-shadow:-8px 0 40px rgba(0,0,0,0.15);
+      z-index:201;
+      display:flex;flex-direction:column;
+      transform:translateX(110%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),background 0.4s;
+      overflow-y:auto;
+    }
+    .settings-panel.open{transform:translateX(0);}
+    .settings-panel-inner{display:flex;flex-direction:column;gap:1rem;padding:1.4rem;flex:1;text-align:left;}
+    .settings-header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.4rem 0.8rem;border-bottom:1px solid var(--border);}
+    .settings-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;color:var(--text);}
+    .settings-close{background:var(--input-bg);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--text);transition:transform 0.15s,background 0.2s;}
+    .settings-close:hover{transform:scale(1.1);background:rgba(255,255,255,0.82);}
+    [data-dark="1"] .settings-close:hover{background:rgba(255,255,255,0.15);}
+    .setting-group label.group-label{font-size:.72rem;font-weight:500;color:var(--text-lt);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.4rem;}
+
+    /* Sliders */
+    .duration-row{display:flex;align-items:center;gap:.6rem;}
+    .duration-row span{font-size:.82rem;color:var(--text);min-width:46px;text-align:right;font-weight:500;}
+    input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:4px;background:linear-gradient(to right,var(--pink-d) 0%,var(--pink-d) var(--pct,50%),rgba(200,180,200,.3) var(--pct,50%));outline:none;cursor:pointer;}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--pink-d);box-shadow:0 2px 6px rgba(0,0,0,.15);}
+
+    /* Pills */
+    .pill-row{display:flex;gap:.4rem;flex-wrap:wrap;}
+    .pill{border:2px solid transparent;border-radius:50px;padding:.3rem .75rem;font-size:.74rem;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;background:var(--input-bg);color:var(--text);}
+    .pill.active{border-color:var(--pink-d);box-shadow:0 2px 8px rgba(0,0,0,.12);}
+    .pill[data-t="bloom"]{background:#f9b8c9;color:#5a3d52;}
+    .pill[data-t="ocean"]{background:#b8ddf9;color:#1e3a52;}
+    .pill[data-t="forest"]{background:#b8f9c8;color:#1e3a28;}
+    .pill[data-t="sunset"]{background:#f9d4b8;color:#52280a;}
+
+    /* Ambient vol */
+    .amb-vol-row{display:flex;align-items:center;gap:.5rem;margin-top:.5rem;}
+    .amb-vol-row label{font-size:.7rem;color:var(--text-lt);white-space:nowrap;}
+    .amb-vol-row input{width:100px;}
+
+    /* Dark toggle */
+    .toggle-row{display:flex;align-items:center;gap:.6rem;}
+    .toggle{position:relative;width:38px;height:22px;flex-shrink:0;}
+    .toggle input{opacity:0;width:0;height:0;}
+    .toggle-slider{position:absolute;inset:0;background:rgba(200,180,200,.4);border-radius:22px;cursor:pointer;transition:background 0.3s;}
+    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+    .toggle input:checked+.toggle-slider{background:var(--pink-d);}
+    .toggle input:checked+.toggle-slider::before{transform:translateX(16px);}
+    .toggle-lbl{font-size:.78rem;color:var(--text);}
+
+    /* Ambient badge */
+    .ambient-badge{display:none;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-lt);margin-bottom:.8rem;justify-content:center;}
+    .ambient-badge.on{display:flex;}
+    .amb-dot{width:7px;height:7px;border-radius:50%;background:var(--pink-d);animation:pulse 1.8s ease infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+    @media(max-width:480px){
+      .card{padding:1.6rem 1.3rem 1.4rem;}
+      .timer-ring-wrap{width:175px;height:175px;}
+      .timer-display{font-size:2.6rem;}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="particles-layer" id="particles"></div>
+  <div class="zen-hint">Press Esc or tap the card to exit zen mode</div>
+
+  <div class="card" id="card">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="app-title"> Bloom</div>
+      <div class="top-actions">
+        <button class="icon-btn" id="zenBtn"     title="Zen mode">🧘</button>
+        <button class="icon-btn" id="notifBtn"   title="Enable notifications">🔔</button>
+        <button class="icon-btn" id="settingsBtn" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+
+
+    <!-- Ambient indicator -->
+    <div class="ambient-badge" id="ambBadge">
+      <div class="amb-dot"></div>
+      <span id="ambLabel">Rain playing</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-mode="work"  onclick="switchMode('work')">Focus</button>
+      <button class="tab"        data-mode="short" onclick="switchMode('short')">Short break</button>
+      <button class="tab"        data-mode="long"  onclick="switchMode('long')">Long break</button>
+    </div>
+
+    <!-- Ring -->
+    <div class="timer-ring-wrap">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle class="ring-bg" cx="100" cy="100" r="86" />
+        <circle class="ring-progress" id="ring" cx="100" cy="100" r="86"
+          stroke="url(#grad)" stroke-dasharray="540.35" stroke-dashoffset="0" />
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop id="g1" offset="0%"   stop-color="#e891aa" />
+            <stop id="g2" offset="100%" stop-color="#c9b8f9" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="timer-face">
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-lbl"     id="timerLbl">focus</div>
+      </div>
+    </div>
+
+    <!-- Motivation -->
+    <div class="motivation" id="motivation">You've got this, gorgeous ✨</div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-icon" onclick="resetTimer()" title="Reset">↺</button>
+      <button class="btn btn-main" id="startBtn" onclick="toggleTimer()">Start</button>
+      <button class="btn btn-icon" onclick="skipSession()" title="Skip">⏭</button>
+    </div>
+
+    <!-- Session counter -->
+    <div class="session-counter">
+      <div class="tomatoes" id="tomatoes"></div>
+      <span id="sessionText">0 / 4 sessions</span>
+    </div>
+
+  </div><!-- /card -->
+
+  
+  <!-- Settings overlay + drawer -->
+  <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <span class="settings-title">⚙️ Settings</span>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-panel-inner">
+
+      <div class="setting-group">
+        <label class="group-label">Focus duration</label>
+        <div class="duration-row">
+          <input type="range" id="focusSlider" min="5" max="60" value="25" step="1" />
+          <span id="focusVal">25 min</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-label">Short break</label>
+        <div class="duration-row">
+          <input type="range" id="shortSlider" min="1" max="15" value="5" step="1" />
+          <span id="shortVal">5 min</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-label">Long break</label>
+        <div class="duration-row">
+          <input type="range" id="longSlider" min="5" max="30" value="15" step="1" />
+          <span id="longVal">15 min</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-label">Theme</label>
+        <div class="pill-row">
+          <button class="pill active" data-t="bloom"  onclick="setTheme('bloom')">Bloom</button>
+          <button class="pill"        data-t="ocean"  onclick="setTheme('ocean')">Ocean</button>
+          <button class="pill"        data-t="forest" onclick="setTheme('forest')">Forest</button>
+          <button class="pill"        data-t="sunset" onclick="setTheme('sunset')">Sunset</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-label">Notification sound</label>
+        <div class="pill-row">
+          <button class="pill active" data-s="chime"   onclick="setSound('chime')"> Chime</button>
+          <button class="pill"        data-s="bell"    onclick="setSound('bell')">Bell</button>
+          <button class="pill"        data-s="tibetan" onclick="setSound('tibetan')">Tibetan</button>
+          <button class="pill"        data-s="none"    onclick="setSound('none')">🔇 None</button>
+        </div>
+      </div>
+
+      <!--
+      <div class="setting-group">
+        <label class="group-label">Ambient sound</label>
+        <div class="pill-row">
+          <button class="pill" data-a="chopin" onclick="setAmbient('chopin')">🎹 Chopin</button>
+          <button class="pill" data-a="debussy" onclick="setAmbient('debussy')">🌊 Debussy</button>
+          <button class="pill" data-a="satie"   onclick="setAmbient('satie')">🌿 Satie</button>
+          <button class="pill" data-a="bach"    onclick="setAmbient('bach')">🕊 Bach</button>
+          <button class="pill active" data-a="off" onclick="setAmbient('off')">🔇 Off</button>
+        </div>
+        <div class="amb-vol-row">
+          <label>Volume</label>
+          <input type="range" id="ambVolSlider" min="0" max="100" value="40" step="1" />
+        </div>
+      </div>
+      -->
+
+      <div class="setting-group">
+        <label class="group-label">Dark mode</label>
+        <div class="toggle-row">
+          <label class="toggle">
+            <input type="checkbox" id="darkToggle" onchange="onDarkToggle(this.checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-lbl" id="darkLbl">Auto (follows time of day)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  // ── Constants ──
+  const CIRC = 2 * Math.PI * 86; // 540.35
+
+  const THEME_GRADS = {
+    bloom:  { work:['#e891aa','#c9b8f9'], short:['#82d9be','#b8f0e0'], long:['#a08adc','#fad4b2'] },
+    ocean:  { work:['#5baad4','#7ec8e3'], short:['#3a9ac0','#5baad4'], long:['#2a7aaa','#3a9ac0'] },
+    forest: { work:['#5aaa6a','#8acc88'], short:['#6acc8a','#a0e0a0'], long:['#3a8a4a','#5aaa6a'] },
+    sunset: { work:['#e8784a','#f0a86a'], short:['#f0a86a','#f8cc8a'], long:['#c85830','#e8784a'] },
+  };
+
+  const QUOTES = {
+    work:  ["You've got this, gorgeous \u2728","Deep focus, deep beauty \uD83C\uDF37","One step at a time, bloom \uD83C\uDF38","You're doing amazing, truly \uD83D\uDC96","Channel your inner magic \u2728","Breathe in, focus out \uD83C\uDF2C\uFE0F"],
+    short: ["Take a gentle breath \uD83C\uDF3F","Stretch those lovely shoulders \uD83E\uDD0D","Hydrate, you deserve it \uD83D\uDCA7","A little pause, a big reset \uD83C\uDF38"],
+    long:  ["You've earned this rest, queen \uD83D\uDC51","Breathe deeply, float freely \uD83C\uDF19","This break is self-care \uD83E\uDEE7","Rest is productive too \uD83C\uDF3C"],
+  };
+
+  const MODE_LABEL = { work:'focus', short:'short break', long:'long break' };
+
+  // ── State ──
+  let durations  = { work:25*60, short:5*60, long:15*60 };
+  let mode       = 'work';
+  let total      = durations.work;
+  let remaining  = total;
+  let running    = false;
+  let ivId       = null;
+  let sessions   = 0;
+  let qIdx       = 0;
+  let sound      = 'chime';
+  let theme      = 'bloom';
+  let ambient    = 'off';
+  let darkManual = false;
+  let zenMode    = false;
+
+  // ── Audio: ambient (classical, domaine public via Wikimedia Commons) ──
+  const AMB_NAMES = {
+    chopin: 'Chopin – Nocturne op. 9',
+    debussy: 'Debussy – Clair de lune',
+    satie:   'Satie – Gymnopédie n°1',
+    bach:    'Bach – Prélude BWV 846',
+  };
+  let currentAmbEl = null;
+
+  function stopAmbient() {
+    if (currentAmbEl) {
+      currentAmbEl.pause();
+      currentAmbEl.currentTime = 0;
+      currentAmbEl = null;
+    }
+    document.getElementById('ambBadge').classList.remove('on');
+  }
+
+  function startAmbient(type) {
+    stopAmbient();
+    if (type === 'off') return;
+
+    const el = document.getElementById('amb-' + type);
+    if (!el) return;
+
+    el.volume = document.getElementById('ambVolSlider').value / 100;
+    currentAmbEl = el;
+
+    const playPromise = el.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        document.getElementById('ambLabel').textContent = AMB_NAMES[type] || type;
+        document.getElementById('ambBadge').classList.add('on');
+      }).catch(() => {
+        // Stream unavailable - silent fallback
+        document.getElementById('ambBadge').classList.remove('on');
+        currentAmbEl = null;
+      });
+    }
+  }
+
+  // ── Audio: notifications ──
+  function playNotes(freqs, type, vol, decay) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      freqs.forEach((f, i) => {
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type=type; o.frequency.value=f;
+        const t=ctx.currentTime+i*0.28;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(vol, t+0.06);
+        g.gain.exponentialRampToValueAtTime(0.001, t+decay);
+        o.start(t); o.stop(t+decay+0.1);
+      });
+    } catch(e){}
+  }
+  const SOUNDS = {
+    chime:   () => playNotes([523.25,659.25,783.99,1046.5],'sine',0.22,0.6),
+    bell:    () => playNotes([880,1108,1318],'triangle',0.18,1.0),
+    tibetan: () => playNotes([220,329.6,440],'sine',0.25,1.4),
+    none:    () => {},
+  };
+
+  // ── Particles ──
+  function spawnParticles(particleMode) {
+    const layer = document.getElementById('particles');
+    layer.innerHTML = '';
+    const isBubble = particleMode === 'bubble';
+    const colors = isBubble ? ['#b8ddf9','#b8f9e8','#d8b8f9'] : ['#f9b8c9','#c9b8f9','#b8f0e0','#fad4b2','#e8c6f5'];
+    for (let i = 0; i < (isBubble ? 18 : 22); i++) {
+      const p = document.createElement('div');
+      p.className = 'particle ' + (isBubble ? 'bubble' : 'petal');
+      const s = isBubble ? (14+Math.random()*28) : (12+Math.random()*14);
+      const c = colors[Math.floor(Math.random()*colors.length)];
+      p.style.cssText = `left:${Math.random()*100}vw;width:${s}px;height:${s}px;color:${c};background:${isBubble?'transparent':c};animation-duration:${7+Math.random()*11}s;animation-delay:${Math.random()*13}s;opacity:0;${isBubble?'border-color:'+c+';':''}`;
+      layer.appendChild(p);
+    }
+  }
+  spawnParticles('petal');
+
+  // ── Slider fill ──
+  function fillSlider(el) {
+    const pct = ((+el.value - +el.min) / (+el.max - +el.min) * 100).toFixed(1) + '%';
+    el.style.setProperty('--pct', pct);
+  }
+  ['focusSlider','shortSlider','longSlider','ambVolSlider'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => fillSlider(el));
+    fillSlider(el);
+  });
+
+  // Duration sliders
+  document.getElementById('focusSlider').addEventListener('input', function(){
+    document.getElementById('focusVal').textContent = this.value + ' min';
+    durations.work = this.value * 60;
+    if (mode==='work') { total=durations.work; remaining=total; render(); }
+  });
+  document.getElementById('shortSlider').addEventListener('input', function(){
+    document.getElementById('shortVal').textContent = this.value + ' min';
+    durations.short = this.value * 60;
+    if (mode==='short') { total=durations.short; remaining=total; render(); }
+  });
+  document.getElementById('longSlider').addEventListener('input', function(){
+    document.getElementById('longVal').textContent = this.value + ' min';
+    durations.long = this.value * 60;
+    if (mode==='long') { total=durations.long; remaining=total; render(); }
+  });
+  document.getElementById('ambVolSlider').addEventListener('input', function(){
+    if (currentAmbEl) currentAmbEl.volume = this.value / 100;
+  });
+
+  // ── Theme ──
+  function setTheme(t) {
+    theme = t;
+    document.body.setAttribute('data-theme', t === 'bloom' ? '' : t);
+    document.querySelectorAll('[data-t]').forEach(p => p.classList.toggle('active', p.dataset.t === t));
+    updateGrad(mode);
+  }
+
+  // ── Sound ──
+  function setSound(s) {
+    sound = s;
+    document.querySelectorAll('[data-s]').forEach(p => p.classList.toggle('active', p.dataset.s === s));
+    if (s !== 'none') SOUNDS[s]();
+  }
+
+  // ── Ambient ──
+  function setAmbient(a) {
+    ambient = a;
+    document.querySelectorAll('[data-a]').forEach(p => p.classList.toggle('active', p.dataset.a === a));
+    startAmbient(a);
+  }
+
+  // ── Dark mode ──
+  function applyDark(on) {
+    document.body.setAttribute('data-dark', on ? '1' : '0');
+    document.getElementById('darkToggle').checked = on;
+  }
+  function onDarkToggle(checked) {
+    darkManual = true;
+    document.getElementById('darkLbl').textContent = checked ? 'Dark' : 'Light';
+    applyDark(checked);
+  }
+  function autoDark() {
+    if (darkManual) return;
+    const h = new Date().getHours();
+    applyDark(h >= 21 || h < 7);
+  }
+  autoDark();
+  setInterval(autoDark, 60000);
+
+  // ── Zen ──
+  document.getElementById('zenBtn').addEventListener('click', () => { zenMode=true; document.body.classList.add('zen'); });
+  document.addEventListener('keydown', e => { if (e.key==='Escape' && zenMode) exitZen(); });
+  document.getElementById('card').addEventListener('click', e => { if (zenMode && (e.target.id==='card' || e.target.classList.contains('timer-display') || e.target.classList.contains('timer-lbl') || e.target.classList.contains('timer-face'))) exitZen(); });
+  function exitZen() { zenMode=false; document.body.classList.remove('zen'); }
+
+  // ── Notifications ──
+  let notifOk = false;
+  document.getElementById('notifBtn').addEventListener('click', async () => {
+    if (!('Notification' in window)) return;
+    notifOk = (await Notification.requestPermission()) === 'granted';
+    document.getElementById('notifBtn').textContent = notifOk ? '\uD83D\uDD14' : '\uD83D\uDD15';
+  });
+  function pushNotif(title, body) {
+    if (notifOk && document.hidden) new Notification(title, { body });
+  }
+
+  // ── Settings drawer ──
+  function openSettings() {
+    document.getElementById('settingsPanel').classList.add('open');
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  function closeSettings() {
+    document.getElementById('settingsPanel').classList.remove('open');
+    document.getElementById('settingsOverlay').classList.remove('open');
+  }
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+
+  // ── Render ──
+  function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+
+  function updateGrad(m) {
+    const g = (THEME_GRADS[theme]||THEME_GRADS.bloom)[m];
+    document.getElementById('g1').setAttribute('stop-color', g[0]);
+    document.getElementById('g2').setAttribute('stop-color', g[1]);
+  }
+
+  function render() {
+    const t = fmt(remaining);
+    document.getElementById('timerDisplay').textContent = t;
+    document.getElementById('timerLbl').textContent = MODE_LABEL[mode];
+    document.title = t + ' | Bloom \uD83C\uDF38';
+    document.getElementById('ring').style.strokeDashoffset = CIRC * (1 - remaining / total);
+  }
+
+  function showQuote() {
+    const pool = QUOTES[mode];
+    const el = document.getElementById('motivation');
+    el.style.opacity = 0;
+    setTimeout(() => { el.textContent = pool[qIdx % pool.length]; el.style.opacity = 1; qIdx++; }, 350);
+  }
+
+  function updateDots() {
+    const d = document.getElementById('tomatoes');
+    d.innerHTML = '';
+    for (let i=0;i<4;i++){const dot=document.createElement('div');dot.className='tomato-dot'+(i<sessions%4?' done':'');d.appendChild(dot);}
+    document.getElementById('sessionText').textContent = sessions + ' / 4 sessions';
+  }
+
+  // ── Timer ──
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(ivId); running=false;
+      document.getElementById('startBtn').textContent = 'Start';
+      SOUNDS[sound]();
+      if (mode === 'work') {
+        sessions++;
+        updateDots();
+        pushNotif('Focus done! \uD83C\uDF38', "Time for a break \uD83D\uDC51");
+        switchMode(sessions % 4 === 0 ? 'long' : 'short');
+      } else {
+        pushNotif('Break over! \u2728', "Back to it \uD83C\uDF37");
+        switchMode('work');
+      }
+      return;
+    }
+    remaining--;
+    render();
+  }
+
+  function toggleTimer() {
+    if (running) {
+      clearInterval(ivId); running=false;
+      document.getElementById('startBtn').textContent = 'Resume';
+    } else {
+      ivId = setInterval(tick, 1000); running=true;
+      document.getElementById('startBtn').textContent = 'Pause';
+      showQuote();
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(ivId); running=false;
+    document.getElementById('startBtn').textContent = 'Start';
+    remaining = total; render();
+  }
+
+  function skipSession() { clearInterval(ivId); running=false; remaining=0; tick(); }
+
+  function switchMode(m) {
+    clearInterval(ivId); running=false;
+    document.getElementById('startBtn').textContent = 'Start';
+    mode=m; total=durations[m]; remaining=total;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode===m));
+    updateGrad(m);
+    spawnParticles(m === 'work' ? 'petal' : 'bubble');
+    render(); showQuote(); updateDots();
+  }
+
+  // ── Boot ──
+  render(); updateDots(); showQuote(); updateGrad('work');
+  </script>
+
+  <!-- Hidden audio players for classical ambient -->
+  <audio id="amb-chopin" loop preload="none"
+    src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Chopin_-_Nocturne_op_9_no_2.ogg"></audio>
+  <audio id="amb-debussy" loop preload="none"
+    src="https://upload.wikimedia.org/wikipedia/commons/2/2e/Debussy_-_Clair_de_lune.ogg"></audio>
+  <audio id="amb-satie" loop preload="none"
+    src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Erik_Satie_-_3_Gymnop%C3%A9dies_-_1._Lent_et_douloureux.ogg"></audio>
+  <audio id="amb-bach" loop preload="none"
+    src="https://upload.wikimedia.org/wikipedia/commons/7/7e/BWV_846_Prelude.ogg"></audio>
+</body>
+</html>
