@@ -94,15 +94,22 @@
     [data-dark="1"] .icon-btn:hover{background:rgba(255,255,255,0.15);}
 
     /* Bloom SVG flower */
-    .bloom-flower{width:28px;height:28px;flex-shrink:0;}
-    .petal-path{transform-origin:14px 14px;animation:petalPulse 3s ease-in-out infinite;}
-    .petal-path:nth-child(1){animation-delay:0s;}
-    .petal-path:nth-child(2){animation-delay:.3s;}
-    .petal-path:nth-child(3){animation-delay:.6s;}
-    .petal-path:nth-child(4){animation-delay:.9s;}
-    .petal-path:nth-child(5){animation-delay:1.2s;}
-    .petal-path:nth-child(6){animation-delay:1.5s;}
-    @keyframes petalPulse{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+    .bloom-flower{width:34px;height:34px;flex-shrink:0;cursor:pointer;}
+    .bloom-flower-wrap{position:relative;display:inline-flex;align-items:center;}
+    .bloom-tooltip{
+      position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 6px);
+      background:rgba(255,255,255,0.95);border:1px solid rgba(200,160,180,0.3);
+      border-radius:12px;padding:6px 10px;font-size:.68rem;color:#5a3d52;
+      white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.2s;
+      box-shadow:0 4px 16px rgba(180,120,160,0.15);z-index:10;
+    }
+    [data-dark="1"] .bloom-tooltip{background:rgba(40,28,50,0.95);color:#f0dff0;}
+    .bloom-flower-wrap:hover .bloom-tooltip{opacity:1;}
+    .fpetal{transform-origin:17px 17px;transition:opacity 0.6s ease,transform 0.6s cubic-bezier(0.34,1.56,0.64,1);opacity:0;transform:scale(0.1);}
+    .fpetal.shown{opacity:0.88 !important;transform:scale(1) !important;}
+    @keyframes petalPulse{0%,100%{opacity:.88}50%{opacity:1;transform:scale(1.1)}}
+    @keyframes petalBoom{0%{opacity:0;transform:scale(0.1)}60%{transform:scale(1.2)}100%{opacity:.88;transform:scale(1)}}
+    .fpetal.petal-bloom-anim{animation:petalBoom 0.55s cubic-bezier(0.34,1.56,0.64,1) both;}
 
     /* Tabs */
     .tabs{display:flex;gap:0.35rem;background:rgba(255,255,255,0.32);border-radius:50px;padding:5px;margin-bottom:1.4rem;transition:background 0.4s;}
@@ -241,16 +248,22 @@
   <div class="card" id="card">
     <div class="top-bar">
       <div class="app-title">
-        <!-- Animated SVG Flower -->
-        <svg class="bloom-flower" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--pink-d)" opacity=".85" transform="rotate(0 14 14)"/>
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--lavender)" opacity=".85" transform="rotate(60 14 14)"/>
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--pink-d)" opacity=".85" transform="rotate(120 14 14)"/>
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--lavender)" opacity=".85" transform="rotate(180 14 14)"/>
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--pink-d)" opacity=".85" transform="rotate(240 14 14)"/>
-          <ellipse class="petal-path" cx="14" cy="8" rx="3.5" ry="6" fill="var(--lavender)" opacity=".85" transform="rotate(300 14 14)"/>
-          <circle cx="14" cy="14" r="4" fill="white" opacity=".95"/>
-        </svg>
+        <!-- Interactive Bloom Flower -->
+        <div class="bloom-flower-wrap" id="flowerWrap">
+          <svg class="bloom-flower" id="flowerSvg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- 6 petals — rotation via transform attr, visibility via style -->
+            <ellipse id="p0" cx="17" cy="9" rx="4" ry="7" fill="#e891aa" transform="rotate(0   17 17)" style="opacity:0;transition:opacity 0.5s ease"/>
+            <ellipse id="p1" cx="17" cy="9" rx="4" ry="7" fill="#c9b8f9" transform="rotate(60  17 17)" style="opacity:0;transition:opacity 0.5s ease 0.08s"/>
+            <ellipse id="p2" cx="17" cy="9" rx="4" ry="7" fill="#e891aa" transform="rotate(120 17 17)" style="opacity:0;transition:opacity 0.5s ease 0.16s"/>
+            <ellipse id="p3" cx="17" cy="9" rx="4" ry="7" fill="#c9b8f9" transform="rotate(180 17 17)" style="opacity:0;transition:opacity 0.5s ease 0.24s"/>
+            <ellipse id="p4" cx="17" cy="9" rx="4" ry="7" fill="#e891aa" transform="rotate(240 17 17)" style="opacity:0;transition:opacity 0.5s ease 0.32s"/>
+            <ellipse id="p5" cx="17" cy="9" rx="4" ry="7" fill="#c9b8f9" transform="rotate(300 17 17)" style="opacity:0;transition:opacity 0.5s ease 0.40s"/>
+            <!-- Center always visible -->
+            <circle cx="17" cy="17" r="5" fill="white" opacity=".95"/>
+            <circle id="flowerCenterDot" cx="17" cy="17" r="2.5" fill="#e891aa" opacity=".7"/>
+          </svg>
+          <div class="bloom-tooltip" id="flowerTooltip">0 pomodoros today</div>
+        </div>
         Bloom
       </div>
       <div class="top-actions">
@@ -460,11 +473,54 @@
   function saveHistory(h) {
     try { localStorage.setItem(LS_HIST, JSON.stringify(h)); } catch(e){}
   }
+  function getTodaySessions() {
+    try {
+      const h = getHistory();
+      const today = new Date().toISOString().slice(0,10);
+      return h[today] || 0;
+    } catch(e) { return 0; }
+  }
+
+  // todaySessionsCount tracks sessions in memory as fallback when localStorage unavailable
+  let todaySessionsCount = 0;
+
+  function updateFlower(animated) {
+    const stored = getTodaySessions();
+    const count = Math.max(stored, todaySessionsCount);
+    const msgs = ['0 pomodoros — let\'s start! 🌱','1 petal — blooming 🌸','2 petals 🌸','3 petals ✨','4 petals 💖','5 petals 🌺','Full bloom! 🌸✨'];
+    const tooltip = document.getElementById('flowerTooltip');
+    if (tooltip) tooltip.textContent = msgs[Math.min(count, msgs.length-1)];
+
+    for (let i = 0; i < 6; i++) {
+      const p = document.getElementById('p' + i);
+      if (!p) continue;
+      if (i < count) {
+        // Show with staggered delay on animation
+        const delay = animated ? (i === count - 1 ? 0 : 0) : 0;
+        setTimeout(() => { p.style.opacity = '0.88'; }, delay);
+        // Pulse center on new petal
+        if (animated && i === count - 1) {
+          const dot = document.getElementById('flowerCenterDot');
+          if (dot) {
+            dot.setAttribute('r', '4');
+            setTimeout(() => dot.setAttribute('r', '2.5'), 350);
+          }
+        }
+      } else {
+        p.style.opacity = '0';
+      }
+    }
+  }
+
   function recordSession() {
-    const h = getHistory();
-    const today = new Date().toISOString().slice(0,10);
-    h[today] = (h[today] || 0) + 1;
-    saveHistory(h);
+    todaySessionsCount++;
+    try {
+      const h = getHistory();
+      const today = new Date().toISOString().slice(0,10);
+      h[today] = (h[today] || 0) + 1;
+      saveHistory(h);
+    } catch(e) {}
+    updateFlower(true);
   }
   function resetHistory() {
     if (!confirm('Reset all history and preferences?')) return;
@@ -850,6 +906,8 @@
   // ── Boot ──
   loadPrefs();
   render(); updateDots(); showQuote(); updateGrad('work');
+  todaySessionsCount = getTodaySessions();
+  updateFlower(false);
   </script>
 </body>
 </html>
